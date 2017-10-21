@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<meta charset="UTF-8"> 
+<html>
+    <head>
+        <title>Debugging!</title>
+        <script>
+            // var visibleScrollbars = window.scrollbars.visible;
+            
+            function generateHTML(jsonObj) {
+                root=jsonObj.documentElement;
+                html_text="<html><head><title>JSON Parse Result</title>";
+                html_text+="</head>";    
+                html_text+="<body>";
+                html_text+="<div style='overflow:auto;white-space:nowrap;'>"
+                html_text+="<table border='2' style='width:100%'>";
+                html_text+="<colgroup>"; 
+                html_text+="<col span='1' style='width: 7.5%;'>"; 
+                html_text+="<col span='1' style='width: 4.5%;'>"; 
+                html_text+="<col span='1' style='width: 15%;'>"; 
+                html_text+="<col span='1' style='width: 26%;'>"; 
+                html_text+="<col span='1' style='width: 17%;'>"; 
+                html_text+="<col span='1' style='width: 29%;'>"; 
+                html_text+="</colgroup>"; 
+                html_text+="<tbody>";
+                html_text+="<tr>"; 
+                
+                x=0;  y=0;
+	           // output the headers
+               var header_keys = jsonObj.Mainline.Table.Header.Data;
+               
+               // check header length 
+               if (header_keys.length != 6)
+                   alert("JSON header length is wrong");
+               
+               for(i=0;i<header_keys.length;i++) {
+                   html_text+="<th>"+header_keys[i]+"</th>"; // header key will be fixed
+               } 
+
+               if (jsonObj.Mainline.Table.hasOwnProperty("Row") && header_keys.length == 6) {
+                    // an array of planes
+                    planes=jsonObj.Mainline.Table.Row;
+                   
+                    if (planes.length == 0) {
+                        html_text+="<tr>";
+                        for(i=0;i<header_keys.length;i++) {
+                            html_text+="<th height='20'> </th>";
+                        }    
+                        html_text+="</tr>";
+                    }
+                        
+                    
+                    planeNodeList=planes[0]; 
+                    html_text+="</tr>"; 
+                    // output out the values
+                    for(i=0;i<planes.length;i++) { //do for all planes (one per row)             
+		                  planeNodeList=planes[i]; //get properties of a plane (an object)
+	                      html_text+="<tr>";      //start a new row of the output table
+                          var aircraft_keys = Object.keys(planeNodeList);
+                          for(j=0;j<aircraft_keys.length;j++) {
+                 	          prop = aircraft_keys[j];
+		                      if(aircraft_keys[j]=="Plane") { // Plane image
+                                    html_text+="<td><img src='"+ planeNodeList[prop] +"' width='360' height='180'></td>";
+                                }
+                              else if(aircraft_keys[j]=="Hubs") { // Hubs
+                                    html_text+="<td><ul>";
+                                    var hubs = planeNodeList[prop].Hub;
+                                    // unordered list
+                                    for(k=0;k<hubs.length;k++) {
+                                        if (k==0)
+                                            html_text+="<li><b>"+hubs[k]+"</b></li>";
+                                        else
+                                            html_text+="<li>"+hubs[k]+"</li>";
+                                    }
+                                    html_text+="</ul></td>";
+                                }
+                              else if (aircraft_keys[j] == "HomePage") { // link
+                                html_text+="<td><a class='mylink' href='" + planeNodeList[prop] + "'>" + planeNodeList[prop] +"</a></td>";
+                                }
+                              else if (aircraft_keys[i] == "Notes") { // Notes
+                                    html_text+="<td width='200'>"+ planeNodeList[prop] +"</td>";
+                                }
+                              else {						  
+			                         html_text+="<td>"+ planeNodeList[prop] +"</td>";		               
+		                        } 	   		        
+	                       } 		           
+	                       html_text+="</tr>";            
+                    } 
+                }
+                else {
+                    // alert("JSON file contains no airline companies");
+                }
+                html_text+="</tbody>"; 
+                html_text+="</div>";
+                html_text+="</table>";           
+                html_text+="</body></html>";  
+            }
+            function check(jsonObj) {
+                if (jsonObj.Mainline.Table.hasOwnProperty("Row"))
+                    return jsonObj;
+                else {
+                    alert("JSON file contains no airline companies");
+                    return null;
+                }
+            }
+            function viewJSON(what) {
+            var URL = what.URL.value;
+            function loadJSON(url, callback) {
+                var xmlhttp;
+                if (window.XMLHttpRequest) {
+                    // code for IE7+, Firefox, Chrome, Opera, Safari
+                    xmlhttp=new XMLHttpRequest(); }
+                else {
+                    // code for IE6, IE5
+                    xmlhttp=new ActiveXObject("Microsoft.XMLHTTP"); 
+                }
+                
+                if (url == "") {
+                    alert("Empty JSON string.");
+                    return null;
+                }
+                else {
+                    xmlhttp.open("GET",url,false); //open, send, responseText are 
+                    try {
+                        xmlhttp.send();
+                    }
+                    catch(e) {
+                        alert("JSON file missing.");
+                        return null;
+                    }
+                    // for JSON parsing
+                    try {
+                        jsonObj = JSON.parse(xmlhttp.responseText);
+                    }
+                    catch(e) {
+                        alert("JSON file parsing fail.");
+                        return null;
+                    }
+                    
+                    return jsonObj;
+                   
+                }
+            }
+    
+            jsonObj = loadJSON(URL);
+            
+            jsonObj = check(jsonObj);
+            
+            if (jsonObj) {
+                if (window.ActiveXObject) { //if IE, simply execute script (due to async prop).
+                    var x,y;
+                    if (jsonObj.parseError.errorCode != 0) {
+                        var myErr = jsonObj.parseError;
+                        generateError(jsonObj);
+                        hWin = window.open("", "Error", "height=300,width=340");
+                        hWin.document.write(html_text);
+                    } 
+                    else {  
+                        generateHTML(jsonObj);
+                        hWin = window.open("test.html", "Assignment4", "height=800,width=600,scrollbars=yes,resizable=yes,location=yes");
+                        hWin.document.write(html_text);
+                    }
+                } 
+                else { //else if FF, execute script once XML object has loaded
+                    jsonObj.onload=generateHTML(jsonObj);
+                    hWin = window.open("test.html", "Assignment4", "height=800,width=1000,scrollbars=yes,resizable=yes,location=yes");
+                    hWin.document.write(html_text);  
+                }
+                hWin.document.close();
+            }
+        }
+        </script>
+    </head>
+    <body>
+        <h3 style="text-align:center">Enter URL for Airlines List JSON File</h3>
+        <form name="myform" method="POST" id="location" style="text-align:center">
+            <input type="text" name="URL" maxlength="255" size="30" value="" />
+            <br>
+            <input type="button" name="submit" value="Submit Query" onClick="viewJSON(this.form)" />
+        </form>
+        <noscript>Sorry, your browser does not support JavaScript!</noscript>
+    </body>
+</html>
